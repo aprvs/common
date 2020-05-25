@@ -35,6 +35,16 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "type_traits",
+    hdrs = [
+        "type_traits.h",
+    ],
+    deps = [
+    ],
+    visibility = ["//visibility:public"],
+)
+
 cc_test(
     name = "error_test",
     srcs = [
@@ -42,7 +52,7 @@ cc_test(
     ],
     deps = [
         ":error",
-        "@googletest//:gtest_main",
+        "@com_googletest//:gtest_main",
     ],
 )
 
@@ -53,7 +63,7 @@ cc_test(
     ],
     deps = [
         ":error_or",
-        "@googletest//:gtest_main",
+        "@com_googletest//:gtest_main",
     ],
 )
 
@@ -64,6 +74,6 @@ cc_test(
     ],
     deps = [
         ":placement_new",
-        "@googletest//:gtest_main",
+        "@com_googletest//:gtest_main",
     ],
 )
