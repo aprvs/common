@@ -38,6 +38,7 @@ cc_library(
 cc_library(
     name = "type_traits",
     hdrs = [
+        "enum_traits.h",
         "type_traits.h",
     ],
     deps = [
@@ -74,6 +75,17 @@ cc_test(
     ],
     deps = [
         ":placement_new",
+        "@com_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "enum_traits_test",
+    srcs = [
+        "enum_traits_test.cc",
+    ],
+    deps = [
+        ":type_traits",
         "@com_googletest//:gtest_main",
     ],
 )

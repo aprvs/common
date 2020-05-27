@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 
+#include "common/enum_traits.h"
+
 namespace registry {
 
 enum class TypeEnum {
@@ -16,7 +18,7 @@ enum class TypeEnum {
   kString,
   kFloat,
   kDouble,
-  // TODO(apoorv) handle enums
+  kEnum,
 };
 
 template <typename T>
@@ -72,6 +74,13 @@ template <>
 struct TypeTrait<double> {
   constexpr static TypeEnum type = TypeEnum::kDouble;
   constexpr static double default_value = 0.0;
+};
+
+template <typename T>
+struct TypeTrait {
+  static_assert(std::is_enum<T>::value, "T must be a enum");
+  constexpr static TypeEnum type = TypeEnum::kEnum;
+  constexpr static T default_value = common::EnumTrait<T>::default_value();
 };
 
 }  // namespace registry
