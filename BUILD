@@ -5,14 +5,6 @@ package(
 licenses(["notice"])
 
 cc_library(
-    name = "placement_new",
-    hdrs = [
-        "placement_new.h",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
     name = "error",
     srcs = [
         "error.cc",
@@ -30,7 +22,7 @@ cc_library(
     ],
     deps = [
         ":error",
-        ":placement_new",
+        "//common/memory:placement_new",
     ],
     visibility = ["//visibility:public"],
 )
@@ -64,17 +56,6 @@ cc_test(
     ],
     deps = [
         ":error_or",
-        "@com_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "placement_new_test",
-    srcs = [
-        "placement_new_test.cc",
-    ],
-    deps = [
-        ":placement_new",
         "@com_googletest//:gtest_main",
     ],
 )

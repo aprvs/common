@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "common/error.h"
-#include "common/placement_new.h"
+#include "common/memory/placement_new.h"
 
 namespace common {
 
