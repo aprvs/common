@@ -1,10 +1,9 @@
 #ifndef COMMON_MEMORY_REF_COUNTED_H_
 #define COMMON_MEMORY_REF_COUNTED_H_
 
-#include <iostream>
-
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 namespace common {
 
@@ -47,9 +46,13 @@ class RefCounted {
  public:
   RefCounted() : RefCounted(nullptr, nullptr) {}
 
-  RefCounted(T* raw_ptr) : RefCounted(nullptr, raw_ptr) {}
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted(U* raw_ptr) : RefCounted(nullptr, raw_ptr) {}
 
-  RefCounted(RefCounted& other)
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted(RefCounted<U, Counter>& other)
       : RefCounted(other.control_ptr_, other.managed_) {
     if (this->managed_ == nullptr) {
       if (this->control_ptr_ != nullptr) {
@@ -64,13 +67,17 @@ class RefCounted {
     }
   }
 
-  RefCounted(RefCounted&& other)
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted(RefCounted<U, Counter>&& other)
       : RefCounted(other.control_ptr_, other.managed_) {
     other.managed_ = nullptr;
     other.control_ptr_ = nullptr;
   }
 
-  RefCounted& operator=(RefCounted& other) {
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted& operator=(RefCounted<U, Counter>& other) {
     if (control_ptr_ == nullptr || control_ptr_->Value() == 1u) {
       DestroyManaged();
     }
@@ -86,7 +93,9 @@ class RefCounted {
     return *this;
   }
 
-  RefCounted& operator=(RefCounted&& other) {
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted& operator=(RefCounted<U, Counter>&& other) {
     if (this->control_ptr_ == nullptr || control_ptr_->Value() == 1u) {
       DestroyManaged();
     }
@@ -123,6 +132,9 @@ class RefCounted {
   }
 
  private:
+  template <typename U, typename UCounter>
+  friend class RefCounted;
+
   RefCounted(Counter* control_ptr, T* to_manage)
       : control_ptr_(control_ptr), managed_(to_manage) {}
 

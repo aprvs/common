@@ -10,7 +10,11 @@ namespace common {
 
 namespace {
 
-struct NonCopyMovable {
+struct Base {
+  virtual ~Base() = default;
+};
+
+struct NonCopyMovable : public Base {
   NonCopyMovable(std::size_t value, std::size_t* destructor_count = nullptr)
       : value_(value), destructor_count_(destructor_count) {
     if (destructor_count_ != nullptr) {
@@ -18,7 +22,7 @@ struct NonCopyMovable {
     }
   }
 
-  ~NonCopyMovable() {
+  ~NonCopyMovable() override {
     if (destructor_count_ != nullptr) {
       ++(*destructor_count_);
     }
@@ -31,7 +35,7 @@ struct NonCopyMovable {
   std::size_t* const destructor_count_;
 };
 
-struct Movable {
+struct Movable : public Base {
   Movable(std::size_t value, std::size_t* destructor_count = nullptr)
       : value_(value), destructor_count_(destructor_count) {
     if (destructor_count_ != nullptr) {
@@ -39,7 +43,7 @@ struct Movable {
     }
   }
 
-  ~Movable() {
+  ~Movable() override {
     if (destructor_count_ != nullptr) {
       ++(*destructor_count_);
     }
@@ -55,7 +59,7 @@ struct Movable {
   std::size_t* const destructor_count_;
 };
 
-struct Copyable {
+struct Copyable : public Base {
   Copyable(std::size_t value, std::size_t* destructor_count = nullptr)
       : value_(value), destructor_count_(destructor_count) {
     if (destructor_count_ != nullptr) {
@@ -63,7 +67,7 @@ struct Copyable {
     }
   }
 
-  ~Copyable() {
+  ~Copyable() override {
     if (destructor_count_ != nullptr) {
       ++(*destructor_count_);
     }
@@ -79,7 +83,7 @@ struct Copyable {
   std::size_t* const destructor_count_;
 };
 
-struct CopyMovable {
+struct CopyMovable : public Base {
   CopyMovable(std::size_t value, std::size_t* destructor_count = nullptr)
       : value_(value), destructor_count_(destructor_count) {
     if (destructor_count_ != nullptr) {
@@ -87,7 +91,7 @@ struct CopyMovable {
     }
   }
 
-  ~CopyMovable() {
+  ~CopyMovable() override {
     if (destructor_count_ != nullptr) {
       ++(*destructor_count_);
     }
@@ -179,6 +183,38 @@ TYPED_TEST(RefCountedTest, ConstructAssignTest) {
   EXPECT_EQ(test_object1.UseCount(), 0);
   EXPECT_EQ(test_object2.UseCount(), 0);
   EXPECT_EQ(destructor_call_count, 1u);
+}
+
+TYPED_TEST(RefCountedTest, InheritanceTest) {
+  std::size_t destructor_count = 0;
+  RefCounted<TypeParam> derived_object(new TypeParam(1, &destructor_count));
+  RefCounted<Base> base_ptr(derived_object);
+  EXPECT_EQ(derived_object.UseCount(), 2);
+  EXPECT_EQ(base_ptr.UseCount(), 2);
+
+  {
+    RefCounted<Base> move_constructed_ptr(std::move(derived_object));
+    EXPECT_EQ(derived_object.UseCount(), 0);
+    EXPECT_EQ(base_ptr.UseCount(), 2);
+    EXPECT_EQ(move_constructed_ptr.UseCount(), 2);
+  }
+  EXPECT_EQ(base_ptr.UseCount(), 1);
+
+  RefCounted<Base> copy_assigned_ptr;
+  EXPECT_EQ(copy_assigned_ptr.UseCount(), 0);
+  copy_assigned_ptr = base_ptr;
+  EXPECT_EQ(base_ptr.UseCount(), 2);
+  EXPECT_EQ(copy_assigned_ptr.UseCount(), 2);
+
+  {
+    RefCounted<Base> move_assigned_ptr;
+    EXPECT_EQ(move_assigned_ptr.UseCount(), 0);
+    move_assigned_ptr = std::move(base_ptr);
+    EXPECT_EQ(base_ptr.UseCount(), 0);
+    EXPECT_EQ(copy_assigned_ptr.UseCount(), 2);
+    EXPECT_EQ(move_assigned_ptr.UseCount(), 2);
+  }
+  EXPECT_EQ(copy_assigned_ptr.UseCount(), 1);
 }
 
 }  // namespace common
