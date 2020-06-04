@@ -16,6 +16,7 @@ cc_library(
     name = "ref_counted",
     hdrs = [
         "ref_counted.h",
+        "thread_unsafe_ref_control.h",
     ],
     visibility = ["//visibility:public"],
 )
