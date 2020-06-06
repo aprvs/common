@@ -17,6 +17,7 @@ cc_library(
     hdrs = [
         "ref_counted.h",
         "thread_unsafe_ref_control.h",
+        "weak_ref_counted.h",
     ],
     visibility = ["//visibility:public"],
 )
@@ -36,6 +37,18 @@ cc_test(
     name = "ref_counted_test",
     srcs = [
         "ref_counted_test.cc",
+    ],
+    deps = [
+        ":ref_counted",
+        "//common/test_structures:base_types",
+        "@com_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "weak_ref_counted_test",
+    srcs = [
+        "weak_ref_counted_test.cc",
     ],
     deps = [
         ":ref_counted",
