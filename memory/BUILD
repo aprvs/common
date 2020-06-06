@@ -39,6 +39,7 @@ cc_test(
     ],
     deps = [
         ":ref_counted",
+        "//common/test_structures:base_types",
         "@com_googletest//:gtest_main",
     ],
 )
