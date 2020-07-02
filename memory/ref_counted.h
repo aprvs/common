@@ -3,7 +3,10 @@
 
 #include <type_traits>
 
+#include <iostream>
+
 #include "common/memory/thread_unsafe_ref_control.h"
+#include "common/memory/weak_ref_counted.h"
 
 namespace common {
 
@@ -50,6 +53,56 @@ class RefCounted {
 
   template <typename U, typename = typename std::enable_if<
                             std::is_convertible<U*, T*>::value>::type>
+  RefCounted(const WeakRefCounted<U, Counter>& other)
+      : RefCounted(other.Expired() ? nullptr : other.control_ptr_,
+                   other.Expired() ? nullptr : other.managed_) {
+    if (this->control_ptr_ != nullptr) {
+      this->control_ptr_->IncrementUseCount();
+    }
+  }
+
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
+  RefCounted(WeakRefCounted<U, Counter>&& other)
+      : RefCounted(other.Expired() ? nullptr : other.control_ptr_,
+                   other.Expired() ? nullptr : other.managed_) {
+    if (this->control_ptr_ != nullptr) {
+      this->control_ptr_->IncrementUseCount();
+    }
+    other.managed_ = nullptr;
+    if (other->control_ptr_ != nullptr) {
+      other->control_ptr_->DecrementUseCount();
+      return;
+    }
+    other.control_ptr_ = nullptr;
+  }
+
+  ~RefCounted() {
+    std::cout << "==================~RefCounted==================" << std::endl;
+    std::cout << "UseCount: " << UseCount() << std::endl;
+    std::cout << "WeakCount: " << WeakCount() << std::endl;
+    if (control_ptr_ == nullptr || control_ptr_->UseCount() == 1u) {
+      std::cout << "deleted managed_" << std::endl;
+      delete managed_;
+    }
+    if (control_ptr_ == nullptr || control_ptr_->WeakCount() == 1u) {
+      std::cout << "deleted control_ptr_" << std::endl;
+      delete control_ptr_;
+      std::cout << "==================~RefCounted=================="
+                << std::endl;
+      return;
+    }
+    std::cout << "Decremented use count" << std::endl;
+    control_ptr_->DecrementUseCount();
+    if (control_ptr_->UseCount() == 0u) {
+      std::cout << "Decremented weak count" << std::endl;
+      control_ptr_->DecrementWeakCount();
+    }
+    std::cout << "==================~RefCounted==================" << std::endl;
+  }
+
+  template <typename U, typename = typename std::enable_if<
+                            std::is_convertible<U*, T*>::value>::type>
   RefCounted& operator=(RefCounted<U, Counter>& other) {
     if (control_ptr_ == nullptr || control_ptr_->UseCount() == 1u) {
       DestroyManaged();
@@ -84,15 +137,6 @@ class RefCounted {
     return *this;
   }
 
-  ~RefCounted() {
-    if (control_ptr_ == nullptr || control_ptr_->UseCount() == 1u) {
-      DestroyManaged();
-      DestroyControl();
-      return;
-    }
-    control_ptr_->DecrementUseCount();
-  }
-
   T const* operator->() const { return managed_; }
   T* operator->() { return managed_; }
 
@@ -102,6 +146,19 @@ class RefCounted {
   std::size_t UseCount() const {
     return (control_ptr_ == nullptr ? (managed_ == nullptr ? 0u : 1u)
                                     : control_ptr_->UseCount());
+  }
+
+  std::size_t WeakCount() const {
+    return (control_ptr_ == nullptr ? (managed_ == nullptr ? 0u : 1u)
+                                    : control_ptr_->WeakCount());
+  }
+
+  WeakRefCounted<T, Counter> GetWeakRef() {
+    if (this->control_ptr_ == nullptr) {
+      this->control_ptr_ = new Counter(1u);
+    }
+    this->control_ptr_->IncrementWeakCount();
+    return WeakRefCounted(this->control_ptr_, this->managed_);
   }
 
  private:
