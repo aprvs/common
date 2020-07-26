@@ -11,7 +11,7 @@ namespace common {
 class ThreadUnsafeRefControl {
  public:
   ThreadUnsafeRefControl(std::size_t use_count)
-      : use_count_(use_count), weak_count_(use_count_ != 0) {}
+      : use_count_(use_count), weak_count_(0) {}
 
   // ThreadUnsafeRefControl is not copy / move constructible / assignable
   ThreadUnsafeRefControl(const ThreadUnsafeRefControl&) = delete;
@@ -34,7 +34,7 @@ class ThreadUnsafeRefControl {
   /// @return  the updated reference / use count
   // Note: in case of an underflow the reference count will not be updated
   std::size_t DecrementUseCount() {
-    return (use_count_ > 0 ? --use_count_ : use_count_);
+    return (use_count_ > 0u ? --use_count_ : use_count_);
   }
 
   /// Increases the weak reference count

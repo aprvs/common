@@ -16,9 +16,7 @@ using test_structures::Copyable;
 using test_structures::CopyMovable;
 
 template <typename T>
-struct RefCountedTest : public testing::Test {
-  using ParamType = T;
-};
+struct RefCountedTest : public testing::Test {};
 
 using TestTypes =
     testing::Types<NonCopyMovable, Movable, Copyable, CopyMovable>;
@@ -127,6 +125,52 @@ TYPED_TEST(RefCountedTest, InheritanceTest) {
     EXPECT_EQ(move_assigned_ptr.UseCount(), 2);
   }
   EXPECT_EQ(copy_assigned_ptr.UseCount(), 1);
+}
+
+TYPED_TEST(RefCountedTest, EndToEndTest) {
+  RefCounted<TypeParam> obj(new TypeParam(1));
+  EXPECT_EQ(obj.UseCount(), 1u);
+  EXPECT_EQ(obj.WeakCount(), 0u);
+
+  WeakRefCounted<TypeParam> weak_ref = obj.GetWeakRef();
+  EXPECT_EQ(obj.UseCount(), 1u);
+  EXPECT_EQ(obj.WeakCount(), 1u);
+  {
+    RefCounted<TypeParam> obj_copy(weak_ref);
+    EXPECT_EQ(obj_copy.UseCount(), 2u);
+    EXPECT_EQ(obj_copy.WeakCount(), 1u);
+    EXPECT_EQ(obj.UseCount(), 2u);
+    EXPECT_EQ(obj.WeakCount(), 1u);
+    EXPECT_EQ(weak_ref.UseCount(), 2u);
+    EXPECT_EQ(weak_ref.WeakCount(), 1u);
+  }
+  EXPECT_EQ(obj.UseCount(), 1u);
+  EXPECT_EQ(obj.WeakCount(), 1u);
+  EXPECT_EQ(weak_ref.UseCount(), 1u);
+  EXPECT_EQ(weak_ref.WeakCount(), 1u);
+
+  {
+    RefCounted<TypeParam> moved_obj(std::move(obj));
+    EXPECT_EQ(moved_obj.UseCount(), 1u);
+    EXPECT_EQ(moved_obj.WeakCount(), 1u);
+    EXPECT_EQ(obj.UseCount(), 0u);
+    EXPECT_EQ(obj.WeakCount(), 0u);
+    EXPECT_EQ(weak_ref.UseCount(), 1u);
+    EXPECT_EQ(weak_ref.WeakCount(), 1u);
+  }
+  EXPECT_EQ(obj.UseCount(), 0u);
+  EXPECT_EQ(obj.WeakCount(), 0u);
+  EXPECT_EQ(weak_ref.UseCount(), 0u);
+  EXPECT_EQ(weak_ref.WeakCount(), 1u);
+
+  // Failed attempt at getting a RefCounted
+  RefCounted<TypeParam> failed_obj(weak_ref);
+  EXPECT_EQ(obj.UseCount(), 0u);
+  EXPECT_EQ(obj.WeakCount(), 0u);
+  EXPECT_EQ(failed_obj.UseCount(), 0u);
+  EXPECT_EQ(failed_obj.WeakCount(), 0u);
+  EXPECT_EQ(weak_ref.UseCount(), 0u);
+  EXPECT_EQ(weak_ref.WeakCount(), 1u);
 }
 
 }  // namespace common
