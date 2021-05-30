@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <utility>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "common/test_structures/base_types.h"
 
