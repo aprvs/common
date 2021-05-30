@@ -20,11 +20,11 @@ cc_library(
     hdrs = [
         "error_or.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":error",
         "//common/memory:placement_new",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -33,9 +33,9 @@ cc_library(
         "enum_traits.h",
         "type_traits.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_test(
